@@ -4,6 +4,12 @@ let handpose;
 let predictions = [];
 let handPredictions = [];
 let gesture = "";
+let faceImage; // 用於存放臉部圖片
+
+function preload() {
+  // 載入臉部圖片
+  faceImage = loadImage("7104050.jpg");
+}
 
 function setup() {
   createCanvas(640, 480).position(
@@ -36,8 +42,8 @@ function draw() {
   if (predictions.length > 0) {
     const keypoints = predictions[0].scaledMesh;
 
-    // 畫臉部五官的點
-    drawFacialKeypoints(keypoints);
+    // 繪製臉部圖片
+    drawFaceImage(keypoints);
 
     // 根據手勢在臉部繪製三角形
     if (gesture === "scissors") {
@@ -50,16 +56,19 @@ function draw() {
   }
 }
 
-function drawFacialKeypoints(keypoints) {
-  noFill();
-  stroke(0, 255, 0);
-  strokeWeight(2);
+function drawFaceImage(keypoints) {
+  // 使用臉部的兩個關鍵點來調整圖片位置和大小
+  const leftCheek = keypoints[234]; // 左臉頰
+  const rightCheek = keypoints[454]; // 右臉頰
+  const nose = keypoints[1]; // 鼻子
 
-  // 畫出臉部五官的點
-  for (let i = 0; i < keypoints.length; i++) {
-    const [x, y] = keypoints[i];
-    ellipse(x, y, 5, 5);
-  }
+  const faceWidth = dist(leftCheek[0], leftCheek[1], rightCheek[0], rightCheek[1]);
+  const faceHeight = faceWidth * 1.2; // 假設臉的高度是寬度的 1.2 倍
+
+  const faceX = nose[0] - faceWidth / 2;
+  const faceY = nose[1] - faceHeight / 2;
+
+  image(faceImage, faceX, faceY, faceWidth, faceHeight);
 }
 
 function drawTriangle(position) {
