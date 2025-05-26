@@ -5,6 +5,7 @@ let predictions = [];
 let handPredictions = [];
 let gesture = "";
 let faceImage; // 用於存放臉部圖片
+let faceMask; // 用於存放裁剪後的臉部圖片
 
 function preload() {
   // 載入臉部圖片
@@ -40,11 +41,12 @@ function draw() {
   image(video, 0, 0, width, height);
 
   if (predictions.length > 0) {
-    console.log(predictions); // 確認是否有臉部關鍵點數據
     const keypoints = predictions[0].scaledMesh;
 
-    drawFaceImage(keypoints);
+    // 繪製裁剪後的臉部圖片
+    drawFaceMask(keypoints);
 
+    // 根據手勢在臉部繪製三角形
     if (gesture === "scissors") {
       drawTriangle(keypoints[10]); // 額頭
     } else if (gesture === "paper") {
@@ -55,11 +57,39 @@ function draw() {
   }
 }
 
-function drawFaceImage(keypoints) {
+function drawFaceMask(keypoints) {
   if (keypoints.length > 0) {
-    const leftCheek = keypoints[234]; // 左臉頰
-    const rightCheek = keypoints[454]; // 右臉頰
-    const nose = keypoints[1]; // 鼻子
+    // 使用臉部輪廓點來建立遮罩
+    const faceOutline = [
+      keypoints[234], // 左臉頰
+      keypoints[93],  // 左眉毛下方
+      keypoints[132], // 左眼外側
+      keypoints[58],  // 左鼻翼
+      keypoints[172], // 下巴
+      keypoints[136], // 右鼻翼
+      keypoints[361], // 右眼外側
+      keypoints[323], // 右眉毛下方
+      keypoints[454]  // 右臉頰
+    ];
+
+    // 建立遮罩圖形
+    let mask = createGraphics(width, height);
+    mask.fill(255);
+    mask.noStroke();
+    mask.beginShape();
+    for (let point of faceOutline) {
+      mask.vertex(point[0], point[1]);
+    }
+    mask.endShape(CLOSE);
+
+    // 將遮罩應用到臉部圖片
+    faceMask = faceImage.get();
+    faceMask.mask(mask);
+
+    // 計算臉部圖片的位置和大小
+    const leftCheek = keypoints[234];
+    const rightCheek = keypoints[454];
+    const nose = keypoints[1];
 
     const faceWidth = dist(leftCheek[0], leftCheek[1], rightCheek[0], rightCheek[1]);
     const faceHeight = faceWidth * 1.2; // 假設臉的高度是寬度的 1.2 倍
@@ -67,8 +97,8 @@ function drawFaceImage(keypoints) {
     const faceX = nose[0] - faceWidth / 2;
     const faceY = nose[1] - faceHeight / 2;
 
-    console.log("臉部圖片位置:", faceX, faceY, faceWidth, faceHeight);
-    image(faceImage, faceX, faceY, faceWidth, faceHeight);
+    // 繪製裁剪後的臉部圖片
+    image(faceMask, faceX, faceY, faceWidth, faceHeight);
   }
 }
 
